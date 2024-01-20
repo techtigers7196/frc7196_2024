@@ -1,5 +1,5 @@
 // Copyright (c) FIRST and other WPILib contributors.
-// Open Source Software; you can modify and/or share it under the terms of
+// Open Source Software; you can modify and/or share ixt under the terms of
 // the WPILib BSD license file in the root directory of this project.
 
 package frc.robot;
@@ -7,6 +7,19 @@ package frc.robot;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+//Libraries for Xbox controller
+import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+
+//Libraries for motor controllers
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+
+//Libraries for Cameras
+import edu.wpi.first.cameraserver.CameraServer;
+import edu.wpi.first.cscore.UsbCamera;
+
 
 /**
  * The VM is configured to automatically run this class, and to call the functions corresponding to
@@ -20,6 +33,31 @@ public class Robot extends TimedRobot {
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  private final XboxController driveController = new XboxController(0);
+
+  //Max drivetrain speeds
+  private double maxForward = 0.65;
+  private double maxTurn = 0.5;
+
+  //CAN ports for motor controllers
+  private int leftDriveMotor1CANPort = 1;
+  private int leftDriveMotor2CANPort = 2;
+  private int rightDriveMotor1CANPort = 3;
+  private int rightDriveMotor2CANPort = 4;
+
+  //Motor controllers
+  private CANSparkMax leftDriveMotorLeader = new CANSparkMax(leftDriveMotor1CANPort, MotorType.kBrushless);
+  private CANSparkMax leftDriveMotorFollower = new CANSparkMax(leftDriveMotor2CANPort, MotorType.kBrushless);
+  private CANSparkMax rightDriveMotorLeader = new CANSparkMax(rightDriveMotor1CANPort, MotorType.kBrushless);
+  private CANSparkMax rightDriveMotorFollower = new CANSparkMax(rightDriveMotor2CANPort, MotorType.kBrushless);
+
+  //Drive train
+  private DifferentialDrive differentialDrive;
+
+  //Cameras
+  private UsbCamera camera1;
+
+
   /**
    * This function is run when the robot is first started up and should be used for any
    * initialization code.
@@ -29,6 +67,19 @@ public class Robot extends TimedRobot {
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
+
+    //Set motors to follow the leaders
+    leftDriveMotorLeader.setInverted(true);
+    leftDriveMotorFollower.follow(leftDriveMotorLeader);
+    rightDriveMotorFollower.follow(rightDriveMotorLeader);
+
+    //Setup drive
+    differentialDrive = new DifferentialDrive(leftDriveMotorLeader, rightDriveMotorLeader);
+
+    //Setup front camera
+    camera1 = CameraServer.startAutomaticCapture("Front Camera", 0);
+    camera1.setResolution(20, 40);
+    camera1.setFPS(16);
   }
 
   /**
@@ -82,7 +133,12 @@ public class Robot extends TimedRobot {
 
   /** This function is called once when the robot is disabled. */
   @Override
-  public void disabledInit() {}
+  public void disabledInit() {
+    double forwardPower = driveController.getLeftY();
+    double turnPower = driveController.getRightX();
+
+    differentialDrive.arcadeDrive(maxForward*forwardPower, maxTurn*turnPower);
+  }
 
   /** This function is called periodically when disabled. */
   @Override
