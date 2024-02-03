@@ -174,15 +174,14 @@ public class Robot extends TimedRobot {
       shooterMotorLeader.set(0);
       shooterMotorFollower.set(0);
     }
-    
-  }
 
     if(aButtonPressed){
-    //set arm to starting position
-    setpoint = start;
-  } else if (yButtonPressed){
-    //set arm to shooting position 
-    setpoint = shooting; 
+      //set arm to starting position
+      setpoint = start;
+    } else if (yButtonPressed){
+      //set arm to shooting position 
+      setpoint = shooting; 
+    }
 
   }
 
