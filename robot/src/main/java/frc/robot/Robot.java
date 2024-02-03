@@ -14,11 +14,13 @@ import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 
 //Libraries for motor controllers
 import com.revrobotics.CANSparkMax;
+import com.revrobotics.RelativeEncoder;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 //Libraries for Cameras
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
+import edu.wpi.first.math.controller.PIDController;
 
 
 /**
@@ -34,22 +36,44 @@ public class Robot extends TimedRobot {
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
   private final XboxController driveController = new XboxController(0);
+  //private final XboxController operatorController = new XboxController(port:1);
 
   //Max drivetrain speeds
-  private double maxForward = 0.65;
-  private double maxTurn = 0.5;
+  private double maxForward = 0.75;
+  private double maxTurn = 0.6;
+
+  //arm 
+  private CANSparkMax m_arm;
+  private RelativeEncoder m_encoder;
+  private final double kP = 0.016;
+  private final double kI = 0.002;
+  private final double kD = 0.0;
+  private final PIDController pid = new PIDController(kP, kI, kD);
+  private double setpoint = 0; 
+  private double start = 1; 
+  private double shooting = 41;
+
 
   //CAN ports for motor controllers
   private int leftDriveMotor1CANPort = 1;
   private int leftDriveMotor2CANPort = 2;
   private int rightDriveMotor1CANPort = 3;
   private int rightDriveMotor2CANPort = 4;
+  private int shooterMotorLeaderCanPort = 5;
+  private int shooterMotorFollowerCanPort = 6;
+  private int armMotorLeaderCanPort = 7; 
+  private int armMotorFollowerCanPort = 8;
 
   //Motor controllers
   private CANSparkMax leftDriveMotorLeader = new CANSparkMax(leftDriveMotor1CANPort, MotorType.kBrushless);
   private CANSparkMax leftDriveMotorFollower = new CANSparkMax(leftDriveMotor2CANPort, MotorType.kBrushless);
   private CANSparkMax rightDriveMotorLeader = new CANSparkMax(rightDriveMotor1CANPort, MotorType.kBrushless);
   private CANSparkMax rightDriveMotorFollower = new CANSparkMax(rightDriveMotor2CANPort, MotorType.kBrushless);
+  private CANSparkMax shooterMotorLeader = new CANSparkMax(shooterMotorLeaderCanPort, MotorType.kBrushless);
+  private CANSparkMax shooterMotorFollower = new CANSparkMax(shooterMotorFollowerCanPort, MotorType.kBrushless);
+  private CANSparkMax armMotorLeader = new CANSparkMax (armMotorLeaderCanPort, MotorType.kBrushless);
+  private CANSparkMax armMotorFollower = new CANSparkMax (armMotorFollowerCanPort, MotorType.kBrushless);
+
 
   //Drive train
   private DifferentialDrive differentialDrive;
@@ -73,13 +97,16 @@ public class Robot extends TimedRobot {
     leftDriveMotorFollower.follow(leftDriveMotorLeader);
     rightDriveMotorFollower.follow(rightDriveMotorLeader);
 
+    shooterMotorLeader.setInverted(true);
+    //shooterMotorFollower.follow(shooterMotorLeader, true);
+
     //Setup drive
     differentialDrive = new DifferentialDrive(leftDriveMotorLeader, rightDriveMotorLeader);
 
     //Setup front camera
     camera1 = CameraServer.startAutomaticCapture("Front Camera", 0);
-    camera1.setResolution(20, 40);
-    camera1.setFPS(16);
+    camera1.setResolution(320, 240);
+    camera1.setFPS(15);
   }
 
   /**
@@ -129,15 +156,39 @@ public class Robot extends TimedRobot {
 
   /** This function is called periodically during operator control. */
   @Override
-  public void teleopPeriodic() {}
+  public void teleopPeriodic() {
+    double forwardPower = driveController.getLeftY();
+    double turnPower = driveController.getRightX();
+    double shotTriggerAxis = driveController.getRightTriggerAxis();
+    double shotSpeed = 0.2;
+
+    differentialDrive.arcadeDrive(maxForward*forwardPower, maxTurn*turnPower);
+
+    boolean aButtonPressed = driveController.getAButtonPressed();
+    boolean yButtonPressed = driveController.getYButtonPressed();
+
+    if(shotTriggerAxis > 0.5){
+      shooterMotorLeader.set(shotSpeed);
+      shooterMotorFollower.set(shotSpeed*2);
+    } else {
+      shooterMotorLeader.set(0);
+      shooterMotorFollower.set(0);
+    }
+    
+  }
+
+    if(aButtonPressed){
+    //set arm to starting position
+    setpoint = start;
+  } else if (yButtonPressed){
+    //set arm to shooting position 
+    setpoint = shooting; 
+
+  }
 
   /** This function is called once when the robot is disabled. */
   @Override
   public void disabledInit() {
-    double forwardPower = driveController.getLeftY();
-    double turnPower = driveController.getRightX();
-
-    differentialDrive.arcadeDrive(maxForward*forwardPower, maxTurn*turnPower);
   }
 
   /** This function is called periodically when disabled. */
