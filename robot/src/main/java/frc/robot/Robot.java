@@ -10,17 +10,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 //Libraries for Xbox controller
 import edu.wpi.first.wpilibj.XboxController;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-
-//Libraries for motor controllers
-import com.revrobotics.CANSparkMax;
-import com.revrobotics.RelativeEncoder;
-import com.revrobotics.CANSparkLowLevel.MotorType;
 
 //Libraries for Cameras
 import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.cscore.UsbCamera;
-import edu.wpi.first.math.controller.PIDController;
+
+//Import subsytems
+import frc.robot.subsystems.*;
 
 
 /**
@@ -30,57 +26,22 @@ import edu.wpi.first.math.controller.PIDController;
  * project.
  */
 public class Robot extends TimedRobot {
+
+  //Auto config options
   private static final String kDefaultAuto = "Default";
   private static final String kCustomAuto = "My Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
 
+  //Xbox Controller
   private final XboxController driveController = new XboxController(0);
-  //private final XboxController operatorController = new XboxController(port:1);
-
-  //Max drivetrain speeds
-  private double maxForward = 0.75;
-  private double maxTurn = 0.6;
-
-  //arm 
-  private CANSparkMax m_arm;
-  private RelativeEncoder m_encoder;
-  private final double kP = 0.016;
-  private final double kI = 0.002;
-  private final double kD = 0.0;
-  private final PIDController pid = new PIDController(kP, kI, kD);
-  private double setpoint = 0; 
-  private double start = 1; 
-  private double shooting = 41;
-
-
-  //CAN ports for motor controllers
-  private int leftDriveMotor1CANPort = 1;
-  private int leftDriveMotor2CANPort = 2;
-  private int rightDriveMotor1CANPort = 3;
-  private int rightDriveMotor2CANPort = 4;
-  private int shooterMotorLeaderCanPort = 5;
-  private int shooterMotorFollowerCanPort = 6;
-  private int armMotorLeaderCanPort = 7; 
-  private int armMotorFollowerCanPort = 8;
-
-  //Motor controllers
-  private CANSparkMax leftDriveMotorLeader = new CANSparkMax(leftDriveMotor1CANPort, MotorType.kBrushless);
-  private CANSparkMax leftDriveMotorFollower = new CANSparkMax(leftDriveMotor2CANPort, MotorType.kBrushless);
-  private CANSparkMax rightDriveMotorLeader = new CANSparkMax(rightDriveMotor1CANPort, MotorType.kBrushless);
-  private CANSparkMax rightDriveMotorFollower = new CANSparkMax(rightDriveMotor2CANPort, MotorType.kBrushless);
-  private CANSparkMax shooterMotorLeader = new CANSparkMax(shooterMotorLeaderCanPort, MotorType.kBrushless);
-  private CANSparkMax shooterMotorFollower = new CANSparkMax(shooterMotorFollowerCanPort, MotorType.kBrushless);
-  private CANSparkMax armMotorLeader = new CANSparkMax (armMotorLeaderCanPort, MotorType.kBrushless);
-  private CANSparkMax armMotorFollower = new CANSparkMax (armMotorFollowerCanPort, MotorType.kBrushless);
-
-
-  //Drive train
-  private DifferentialDrive differentialDrive;
 
   //Cameras
   private UsbCamera camera1;
 
+  //Subsystems
+  private LemonDrive lemonDrive;
+  private Manipulator manipulator;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -92,16 +53,8 @@ public class Robot extends TimedRobot {
     m_chooser.addOption("My Auto", kCustomAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
-    //Set motors to follow the leaders
-    leftDriveMotorLeader.setInverted(true);
-    leftDriveMotorFollower.follow(leftDriveMotorLeader);
-    rightDriveMotorFollower.follow(rightDriveMotorLeader);
-
-    shooterMotorLeader.setInverted(true);
-    //shooterMotorFollower.follow(shooterMotorLeader, true);
-
-    //Setup drive
-    differentialDrive = new DifferentialDrive(leftDriveMotorLeader, rightDriveMotorLeader);
+    //Setup drive subsytem
+    lemonDrive = new LemonDrive();
 
     //Setup front camera
     camera1 = CameraServer.startAutomaticCapture("Front Camera", 0);
@@ -157,31 +110,35 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
+    //Drive
     double forwardPower = driveController.getLeftY();
     double turnPower = driveController.getRightX();
+    lemonDrive.drive(forwardPower, turnPower);
+
+    //Shoot
     double shotTriggerAxis = driveController.getRightTriggerAxis();
-    double shotSpeed = 0.2;
 
-    differentialDrive.arcadeDrive(maxForward*forwardPower, maxTurn*turnPower);
+    if(shotTriggerAxis > 0.5){
+      manipulator.shoot(0.5);
+    } else {
+      manipulator.stopShooting();
+    }
 
+    //Arm
     boolean aButtonPressed = driveController.getAButtonPressed();
     boolean yButtonPressed = driveController.getYButtonPressed();
 
-    if(shotTriggerAxis > 0.5){
-      shooterMotorLeader.set(shotSpeed);
-      shooterMotorFollower.set(shotSpeed*2);
-    } else {
-      shooterMotorLeader.set(0);
-      shooterMotorFollower.set(0);
-    }
+    String armPosition = manipulator.kArmPosStart;
 
     if(aButtonPressed){
       //set arm to starting position
-      setpoint = start;
+      armPosition = manipulator.kArmPosStart;
     } else if (yButtonPressed){
       //set arm to shooting position 
-      setpoint = shooting; 
+      armPosition = manipulator.kArmPosShooting; 
     }
+
+    manipulator.moveArmToPos(armPosition);
 
   }
 
