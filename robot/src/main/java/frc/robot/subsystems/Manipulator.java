@@ -35,12 +35,10 @@ public class Manipulator {
     private final PIDController pid = new PIDController(kP, kI, kD);
 
     //Setpoint options
-    public static String kArmPosStart = "Start"; 
-    public static String kArmPosShooting = "Shooting";
-
-    //Setpoint values
-    private final double armPosStartValue = 0;
-    private final double armPosShootingValue = 40;
+    public static double kArmPosFloor = 0; 
+    public static double kArmPosFender = 40;
+    public static double kArmPosStart = 30;
+    public static double kArmPosAmp = 32;
 
     //CAN ports for motor controllers
     private int shooterMotorCanPort = 5;
@@ -104,13 +102,17 @@ public class Manipulator {
     }
 
     //Translate the position to a value and move the arm to that position
-    public void moveArmToPos(String armPosition) {
+    public void moveArmToPos(double armPosition) {
         double setpoint = 0;
 
-        if(armPosition == kArmPosStart) {
-            setpoint = armPosStartValue;
-        } else if(armPosition == kArmPosShooting) {
-            setpoint = armPosShootingValue;
+        if(armPosition == kArmPosFloor) {
+            setpoint = kArmPosFloor;
+        } else if(armPosition == kArmPosFender) {
+            setpoint = kArmPosFender;
+        } else if(armPosition == kArmPosStart) {
+            setpoint = kArmPosStart;
+        } else if(armPosition == kArmPosAmp) {
+            setpoint = kArmPosAmp;
         }
          
         double pidValue = pid.calculate(armEncoder.getPosition(), setpoint);
