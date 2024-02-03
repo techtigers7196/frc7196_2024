@@ -2,25 +2,39 @@ package frc.robot.subsystems;
 
 //Libraries for motor controllers
 import com.revrobotics.CANSparkMax;
+
+//Libraries for encoder
 import com.revrobotics.RelativeEncoder;
-import edu.wpi.first.math.controller.PIDController;
 import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.CANSparkBase.IdleMode;
+
+//Library for PID for the arm
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.wpilibj.I2C;
+
+//Library for the color sensor for note detection
+import edu.wpi.first.wpilibj.I2C;
+import com.revrobotics.ColorSensorV3;
+
 
 public class Manipulator {
 
     //Setup our arm and encoder
     private RelativeEncoder armEncoder;
 
-    //PID Variable
+    //PID Variables for arm power
     private final double kP = 0.016;
     private final double kI = 0.002;
     private final double kD = 0.0;
     private final double feedForward = 0.01;
 
-    //PID Controller
+    //Max power for arm
+    private final double maxArmPower = 0.5;
+
+    //PID Controller for calculating arm power
     private final PIDController pid = new PIDController(kP, kI, kD);
 
-    //Setpoints options
+    //Setpoint options
     public static String kArmPosStart = "Start"; 
     public static String kArmPosShooting = "Shooting";
 
@@ -29,35 +43,67 @@ public class Manipulator {
     private final double armPosShootingValue = 40;
 
     //CAN ports for motor controllers
-    private int shooterMotorTopCanPort = 5;
-    private int shooterMotorBottomCanPort = 6;
+    private int shooterMotorCanPort = 5;
+    private int intakeMotorCanPort = 6;
     private int armMotorLeaderCanPort = 7; 
     private int armMotorFollowerCanPort = 8;
 
     //Motor controllers
-    private CANSparkMax shooterMotorTop = new CANSparkMax(shooterMotorTopCanPort, MotorType.kBrushless);
-    private CANSparkMax shooterMotorBottom = new CANSparkMax(shooterMotorBottomCanPort, MotorType.kBrushless);
+    private CANSparkMax shooterMotor = new CANSparkMax(shooterMotorCanPort, MotorType.kBrushless);
+    private CANSparkMax intakeMotor = new CANSparkMax(intakeMotorCanPort, MotorType.kBrushless);
     private CANSparkMax armMotorLeader = new CANSparkMax (armMotorLeaderCanPort, MotorType.kBrushless);
     private CANSparkMax armMotorFollower = new CANSparkMax (armMotorFollowerCanPort, MotorType.kBrushless);
 
+    /**
+     * Change the I2C port below to match the connection of your color sensor
+     */
+    private final I2C.Port i2cPort = I2C.Port.kOnboard;
+
+    /**
+     * A Rev Color Sensor V3 object is constructed with an I2C port as a 
+     * parameter. The device will be automatically initialized with default 
+     * parameters.
+     */
+    private final ColorSensorV3 colorSensor = new ColorSensorV3(i2cPort);
+
+    //Contructor
     public Manipulator() {
         //Set the top motor for the shooter to spin in reverse
-        shooterMotorTop.setInverted(true);
+        shooterMotor.setInverted(true);
 
         //Set the second arm motor to follow the first
+        armMotorLeader.setIdleMode(IdleMode.kBrake);
+        armMotorFollower.setIdleMode(IdleMode.kBrake);
         armMotorFollower.follow(armMotorLeader);
     }
 
+    //Start the shooter spinning
     public void shoot(double shotSpeed) {
-        shooterMotorTop.set(shotSpeed);
-        shooterMotorBottom.set(shotSpeed*2);
+        shooterMotor.set(shotSpeed);
     }
 
+    //Set the shooter to stop spinning
     public void stopShooting() {
-        shooterMotorTop.set(0);
-        shooterMotorBottom.set(0);
+        shooterMotor.set(0);
     }
 
+    //Function to call our intake
+    public void intake(double intakeSpeed) {
+        intakeMotor.set(intakeSpeed);
+    }
+ 
+    /**
+     * Function to check if the note is in the sensor
+     * We might have to do a color match instead if this doesn't work
+     * https://github.com/REVrobotics/Color-Sensor-v3-Examples/blob/master/Java/Color%20Match/src/main/java/frc/robot/Robot.java
+     * @return boolean
+     */
+    public boolean getNoteSensor() {
+        int proximity = colorSensor.getProximity();
+        return proximity > 0 && proximity < 100;
+    }
+
+    //Translate the position to a value and move the arm to that position
     public void moveArmToPos(String armPosition) {
         double setpoint = 0;
 
@@ -68,7 +114,20 @@ public class Manipulator {
         }
          
         double pidValue = pid.calculate(armEncoder.getPosition(), setpoint);
-        armMotorLeader.set(feedForward + pidValue);
+        double power = feedForward + pidValue;
+        this.moveArm(power);
+    }
+
+    //Actually move the arm, while keeping the power under a max power
+    public void moveArm(double power) {
+        // Stop from making too much torque
+        if (power > maxArmPower) {
+            power = maxArmPower;
+        } else if (power < -maxArmPower) {
+            power = -maxArmPower;
+        }
+
+        armMotorLeader.set(power);
     }
     
 }
