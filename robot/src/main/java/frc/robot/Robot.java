@@ -42,7 +42,9 @@ public class Robot extends TimedRobot {
 
   //Subsystems
   private LemonDrive lemonDrive;
-  private Manipulator manipulator;
+  private LemonGrab lemonGrab;
+
+  double armPosition;
 
   /**
    * This function is run when the robot is first started up and should be used for any
@@ -56,11 +58,15 @@ public class Robot extends TimedRobot {
 
     //Setup drive subsytem
     lemonDrive = new LemonDrive();
+    lemonGrab = new LemonGrab();
+
+    armPosition = lemonGrab.kArmPosFloor;
+
 
     //Setup front camera
-    camera1 = CameraServer.startAutomaticCapture("Front Camera", 0);
-    camera1.setResolution(320, 240);
-    camera1.setFPS(15);
+    // camera1 = CameraServer.startAutomaticCapture("Front Camera", 0);
+    // camera1.setResolution(320, 240);
+    // camera1.setFPS(15);
   }
 
   /**
@@ -71,7 +77,10 @@ public class Robot extends TimedRobot {
    * SmartDashboard integrated updating.
    */
   @Override
-  public void robotPeriodic() {}
+  public void robotPeriodic() {
+    lemonGrab.pushArmValue();
+    lemonGrab.pushColorSensorValue();
+  }
 
   /**
    * This autonomous (along with the chooser code above) shows how to select between different
@@ -111,68 +120,76 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    double armPosition = manipulator.kArmPosFloor;
 
     //Drive
     double forwardPower = driveController.getLeftY();
     double turnPower = driveController.getRightX();
     lemonDrive.drive(forwardPower, turnPower);
 
-    //intake
-    if(driveController.getRightBumperPressed() && !manipulator.getNoteSensor()){
-      //if pressing intake button and the  note is not in the  intake
-      manipulator.intake(0.375); 
+    // //intake
+    // if(driveController.getRightBumperPressed() && !manipulator.hasNote()){
+    //   //if pressing intake button and the  note is not in the  intake
+    //   manipulator.intake(0.375); 
       
-      //if we are not shooting 
-      if(driveController.getRightTriggerAxis() <0.5 ){
-         armPosition = manipulator.kArmPosFloor;
-      }
-    } else if (driveController.getLeftBumperPressed()){
-      //if we press the left bumper load the note 
-      manipulator.intake(-1);
-      manipulator.shoot(-0.25);
-    } else {
-      //if no bumpers are pressed turn off the intake and shooter
-      manipulator.intake(0);
-      manipulator.stopShooting();
-    }
+    //   //if we are not shooting 
+    //   if(driveController.getRightTriggerAxis() <0.5 ){
+    //      armPosition = manipulator.kArmPosFloor;
+    //   }
+    // } else if (driveController.getLeftBumperPressed()){
+    //   //if we press the left bumper load the note 
+    //   manipulator.intake(-1);
+    //   manipulator.shoot(-0.25);
+    // } else {
+    //   //if no bumpers are pressed turn off the intake and shooter
+    //   manipulator.intake(0);
+    //   manipulator.stopShooting();
+    // }
 
-    if(driveController.getRightBumperPressed() && manipulator.getNoteSensor()){
-      // if note is in the intake set the controller to vibrate
-      driveController.setRumble(GenericHID.RumbleType.kBothRumble, 1);
-    }else {
-      //turn off rumble
-      driveController.setRumble(GenericHID.RumbleType.kBothRumble, 0);
-    }
+    //  //shooter  
+    //  if (driveController.getRightTriggerAxis()>0.1){
+    //   //if statring to press the trigger it will start shooting
+    //   if(manipulator.getArmEncoder()<manipulator.kArmPosStart){
+    //     //dont understand quokkas code
+    //     manipulator.shoot(0.25);
+    //   }
+    // }
+        
+    // if(driveController.getRightBumperPressed() && manipulator.hasNote()){
+    //   // if note is in the intake set the controller to vibrate
+    //   driveController.setRumble(GenericHID.RumbleType.kBothRumble, 1);
+    // }else {
+    //   //turn off rumble
+    //   driveController.setRumble(GenericHID.RumbleType.kBothRumble, 0);
+    // }
     
 
-    if (driveController.getRightBumperReleased()) {
-      //No longer intaking; raise intake to avoid damage
-      armPosition = manipulator.kArmPosFender;
-    }
-    
-    //Shoot
-    double shotTriggerAxis = driveController.getRightTriggerAxis();
-
-    if(shotTriggerAxis > 0.5){
-      manipulator.shoot(0.5);
-    } else {
-      manipulator.stopShooting();
-    }
+    // if (driveController.getRightBumperReleased()) {
+    //   //No longer intaking; raise intake to avoid damage
+    //   armPosition = manipulator.kArmPosFender;
+    // }
 
     //Arm
     boolean aButtonPressed = driveController.getAButtonPressed();
     boolean yButtonPressed = driveController.getYButtonPressed();
+    boolean xButtonPressed = driveController.getXButtonPressed();
+    boolean bButtonPressed = driveController.getBButtonPressed();
 
-    if(aButtonPressed){
+
+   if(aButtonPressed){
       //set arm to starting position
-      armPosition = manipulator.kArmPosFloor;
-    } else if (yButtonPressed){
+      armPosition = lemonGrab.kArmPosFloor;
+    } else if (bButtonPressed){
       //set arm to shooting position 
-      armPosition = manipulator.kArmPosFender; 
+      armPosition = lemonGrab.kArmPosFender; 
+    }else if (yButtonPressed){
+      //set arm to idk what position it is 
+      armPosition= lemonGrab.kArmPosStart;
+    }else if (xButtonPressed){
+      //set arm to amp position
+      armPosition= lemonGrab.kArmPosAmp;
     }
 
-    manipulator.moveArmToPos(armPosition);
+    lemonGrab.moveArmToPos(armPosition);
 
   }
 
