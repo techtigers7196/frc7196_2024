@@ -43,10 +43,10 @@ public class LemonGrab {
     private final PIDController pid = new PIDController(kP, kI, kD);
 
     //Setpoint options
-    public static double kArmPosFloor = 0; 
-    public static double kArmPosFender = 20;
-    public static double kArmPosStart = 143;
-    public static double kArmPosAmp = 175;
+    public static double kArmPosFloor = 0.232; 
+    public static double kArmPosFender = 0.345;
+    public static double kArmPosStart = 0.492;
+    public static double kArmPosAmp = 0.565;
 
     //CAN ports for motor controllers
     private int shooterMotorCanPort = 5;
@@ -144,7 +144,7 @@ public class LemonGrab {
      * This function will need to be called in robotPeriodic
      */
     public void pushArmValue() {
-        SmartDashboard.putNumber("Arm Encoder Value", this.getArmPosition());
+        SmartDashboard.putNumber("Arm Position", this.getArmPosition());
     }
 
     //Translate the position to a value and move the arm to that position
@@ -185,6 +185,7 @@ public class LemonGrab {
     
     //get position of the arm 
     public double getArmPosition(){
-        return armEncoder.getDistance();
+        return armEncoder.getAbsolutePosition();
     }
 }
+
