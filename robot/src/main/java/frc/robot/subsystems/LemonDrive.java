@@ -12,8 +12,8 @@ import edu.wpi.first.wpilibj.AnalogGyro;
 
 public class LemonDrive {
     //Max drivetrain speeds
-    private double maxPower = 0.75;
-    private double maxTurn = 0.6;
+    private double maxPower = 0.9;
+    private double maxTurn = 0.7;
 
     //CAN ports for motor controllers
     private int leftDriveMotor1CANPort = 1;
