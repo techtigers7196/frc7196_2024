@@ -22,46 +22,35 @@ public class TwoNoteAuto {
     }
 
     public void run(){
-        if(util.wait(startTime, 3)){
+        if(util.wait(startTime, 2)){
             //Lower arm and start spinning shoot wheels
             lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
-            lemonGrab.spinFlyWheels(0.5);
-        } else if (util.wait(startTime, 5)) {
+        } else if (util.wait(startTime, 4)) {
             //Shoot
-            lemonGrab.spinFlyWheels(0.5);
-            lemonGrab.spinFeederWheels(.5);
-        } else if (util.wait(startTime,7.5)) {
-            //Drive, intake
-            lemonGrab.spinFlyWheels(0); 
+            lemonGrab.shoot();
+        } else if (util.wait(startTime,6)) {
+            //Drive, intake 
             lemonGrab.moveArmToPos(lemonGrab.kArmPosFloor);
             lemonDrive.gyroDrive(0.5,0);
             if (!lemonGrab.hasNote()){
-                lemonGrab.spinFeederWheels(.44);
-                lemonGrab.spinFlyWheels(-0.05);
+                lemonGrab.intake();
             } else {
-                lemonGrab.spinFeederWheels(0);
-                lemonGrab.spinFlyWheels(0);
+                lemonGrab.turnOff();
             }
-        } else if (util.wait(startTime,11.5)) {
+        } else if (util.wait(startTime,10)) {
             //Drive back and start spinning shoot wheels
             lemonDrive.gyroDrive(-0.5, 0);
             lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
             if (!lemonGrab.hasNote()){
-                lemonGrab.spinFeederWheels(.44);
-                lemonGrab.spinFlyWheels(-0.05);
-            } else {
-                lemonGrab.spinFeederWheels(0);
-                lemonGrab.spinFlyWheels(0.5);
+                lemonGrab.intake();
             }
         } else if (util.wait(startTime,14)) {
             //Shoot and stop
-            lemonGrab.spinFlyWheels(0.5);
-            lemonGrab.spinFeederWheels(0.5);
+            lemonGrab.shoot();
             lemonDrive.gyroDrive(0,0);
         } else {
             //Stop everything
-            lemonGrab.spinFeederWheels(0);
-            lemonGrab.spinFlyWheels(0);
+            lemonGrab.turnOff();
             lemonDrive.gyroDrive(0, 0);
         } 
     }

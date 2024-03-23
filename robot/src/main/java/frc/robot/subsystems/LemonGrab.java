@@ -4,6 +4,7 @@ package frc.robot.subsystems;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkBase.IdleMode;
+import com.revrobotics.RelativeEncoder;
 
 //Libraries for encoder
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
@@ -26,6 +27,16 @@ public class LemonGrab {
     //Setup our arm and encoder
     private DutyCycleEncoder armEncoder = new DutyCycleEncoder(0);
 
+    //Setup our shoot encoder and variables
+    private RelativeEncoder shootEncoder;
+    private double shotPower = .9;
+    private double shotSpeed = 4200;
+    private double feedPower = .7;
+
+    //Intake variables
+    private double intakePower = 0.35;
+    private double intakePrevent = -0.1;
+
     //PID Variables for arm power
     private final double kP = 15;
     private final double kI = 0.5;
@@ -38,12 +49,18 @@ public class LemonGrab {
     //PID Controller for calculating arm power
     private final PIDController pid = new PIDController(kP, kI, kD);
 
-    //Setpoint options
-    public static double kArmPosFloor = 0.250; 
+    // Setpoint options
+    public static double kArmPosFloor = 0.247; 
     public static double kArmPosSpeaker = 0.287;
     public static double kArmPosStart = 0.492;
     public static double kArmPosAmp = 0.5;
-    public static double kArmPosExtra = 0.36;
+    // public static double kArmPosExtra = 0.36;
+
+    public static double kArmPosFloor2 = 0.32; 
+    public static double kArmPosSpeaker2 = 0.342;
+    public static double kArmPosStart2 = 0.355;
+    public static double kArmPosAmp2 = 0.362 ;
+    public static double kArmPosExtra = 0.359;
 
     //CAN ports for motor controllers
     private int flywheelMotorCanPort = 5;
@@ -77,6 +94,8 @@ public class LemonGrab {
         feederMotor.setIdleMode(IdleMode.kCoast);
         flywheelMotor.setIdleMode(IdleMode.kBrake);
 
+        shootEncoder = flywheelMotor.getEncoder();
+
 
         //Set the second arm motor to follow the first
         armMotorLeader.setInverted(true);
@@ -94,15 +113,15 @@ public class LemonGrab {
     /*
      * Start the shooter wheels spinning
      */
-    public void spinFlyWheels(double flySpeed) {
-        flywheelMotor.set(flySpeed);
+    public void spinFlyWheels(double speed) {
+        flywheelMotor.set(speed);
     }
 
     /*
      * Function to call our intake wheels
      */
-    public void spinFeederWheels(double feederSpeed) {
-        feederMotor.set(feederSpeed);
+    public void spinFeederWheels(double speed) {
+        feederMotor.set(speed);
     }
 
     /*
@@ -111,7 +130,8 @@ public class LemonGrab {
      * Function to intake a note
      */
     public void intake() {
-
+        this.spinFeederWheels(intakePower);
+        this.spinFlyWheels(intakePrevent);
     }
 
     /*
@@ -129,7 +149,11 @@ public class LemonGrab {
      * Function to shoot a note
      */
     public void shoot() {
-        
+        this.spinFlyWheels(shotPower);
+
+        if(shootEncoder.getVelocity() >= shotSpeed) {
+            this.spinFeederWheels(feedPower);
+        }
     }
 
     /*
@@ -138,7 +162,8 @@ public class LemonGrab {
      * Function to turn off all of the motors
      */
     public void turnOff() {
-        
+        this.spinFeederWheels(0);
+        this.spinFlyWheels(0);
     }
  
     /**
@@ -150,7 +175,7 @@ public class LemonGrab {
     public boolean hasNote() {
         int proximity = 0;
         proximity = colorSensor.getProximity();
-        return proximity > 150;
+        return proximity > 120;
     }
 
     /*
@@ -160,6 +185,8 @@ public class LemonGrab {
     public void pushColorSensorValue() {
         SmartDashboard.putNumber("Proximity", colorSensor.getProximity());
         SmartDashboard.putBoolean("Has Note", this.hasNote());
+
+        SmartDashboard.putNumber("Velocity: ", shootEncoder.getVelocity());
 
     }
 
@@ -178,21 +205,7 @@ public class LemonGrab {
 
     //Translate the position to a value and move the arm to that position
     public void moveArmToPos(double armPosition) {
-        double setpoint = 0;
-
-        if(armPosition == kArmPosFloor) {
-            setpoint = kArmPosFloor;
-        } else if(armPosition == kArmPosSpeaker) {
-            setpoint = kArmPosSpeaker;
-        } else if(armPosition == kArmPosStart) {
-            setpoint = kArmPosStart;
-        } else if(armPosition == kArmPosAmp) {
-            setpoint = kArmPosAmp;
-        } else if(armPosition == kArmPosExtra){
-            setpoint = kArmPosExtra;            
-        }
-         
-        double pidValue = pid.calculate(this.getArmPosition(), setpoint);
+        double pidValue = pid.calculate(this.getArmPosition(), armPosition);
         double power = feedForward + pidValue;
         this.moveArm(power);
 

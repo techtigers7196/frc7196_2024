@@ -29,19 +29,15 @@ public class OneNoteDriveAuto {
             lemonGrab.spinFlyWheels(0.5);
           } else if (util.wait(startTime, 5)) {
             //Shoot
-            lemonGrab.spinFlyWheels(0.5);
-            lemonGrab.spinFeederWheels(.5);
+            lemonGrab.shoot();
           } else if (util.wait(startTime,8)) {
             //Wait
-            lemonGrab.spinFlyWheels(0); 
-            lemonGrab.spinFeederWheels(0);
+            lemonGrab.turnOff();
           } else if (util.wait(startTime,15)) {
-            //Drive back and start spinning shoot wheels
+            //Drive back
             lemonDrive.gyroDrive(-0.3, 0);
           } else {
             //Stop everything
-            lemonGrab.spinFeederWheels(0);
-            lemonGrab.spinFlyWheels(0);
             lemonDrive.gyroDrive(0, 0);
           }
     }

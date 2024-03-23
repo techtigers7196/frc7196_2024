@@ -107,6 +107,12 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("tx", tx.getDouble(0.0));
     ty = limelight.getEntry("ty");
     SmartDashboard.putNumber("ty", ty.getDouble(0.0));
+
+    double distance = this.getDistance();
+    SmartDashboard.putNumber("Distance", distance);
+
+    double calculatedArmPosition = this.calculateArmPosition(distance);
+    SmartDashboard.putNumber("Arm Position: ", calculatedArmPosition);
   }
 
   /*
@@ -118,13 +124,13 @@ public class Robot extends TimedRobot {
     double targetOffsetAngle_Vertical = ty.getDouble(0.0);
 
     // how many degrees back is your limelight rotated from perfectly vertical?
-    double limelightMountAngleDegrees = 25.0; 
+    double limelightMountAngleDegrees = 28; 
 
     // distance from the center of the Limelight lens to the floor
-    double limelightLensHeightInches = 20.0; 
+    double limelightLensHeightInches = 10.5; 
 
     // distance from the target to the floor
-    double goalHeightInches = 60.0; 
+    double goalHeightInches = 49.0; 
 
     double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
     double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
@@ -133,6 +139,11 @@ public class Robot extends TimedRobot {
     double distanceFromLimelightToGoalInches = (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
 
     return distanceFromLimelightToGoalInches;
+  }
+
+  public double calculateArmPosition(double distance) {
+    double armPosition = 0.209 + 0.00231*distance - 0.0000131*Math.pow(distance, 2) + 0.0000000259*Math.pow(distance, 3);
+    return armPosition;
   }
 
   /**
@@ -225,9 +236,7 @@ public class Robot extends TimedRobot {
        * Move the arm to the floor position and start intaking
        */
       armPosition = lemonGrab.kArmPosFloor;
-      lemonGrab.spinFeederWheels(0.27);
-      
-      lemonGrab.spinFlyWheels(-0.2);  
+      lemonGrab.intake();  
     } else if (leftTrigger > 0 && lemonGrab.hasNote()) {
       //If we are not intaking, and we press the left trigger raise arm to amp position
       armPosition = lemonGrab.kArmPosAmp;
@@ -236,26 +245,20 @@ public class Robot extends TimedRobot {
         lemonGrab.spinFlyWheels(0.5);
         lemonGrab.spinFeederWheels(0.5);
       }
-    } else if (rightTrigger > 0.1) {
+    } else if (rightTrigger > 0) {
       //If we are not intaking or scoring on the amp and press the right trigger then start shooting process
-      if(rightTrigger > 0.5) {
-        //If we press the trigger all the way spin the shoot wheels 
-        lemonGrab.spinFlyWheels(1);
-      } else {
-        //If we half press the trigger then auto aim
-        double targetOffsetAngle = tx.getDouble(0.0);
-        double adjustmentAngle = Kp * targetOffsetAngle;
-        lemonDrive.drive(forwardPower, adjustmentAngle);
-      }
+      if(rightTrigger < 0.5) {
+        armPosition = this.calculateArmPosition(this.getDistance());
 
-      if(rightBumper) {
-        //When we are ready to shoot, while holding the right trigger, press the right bumper to feed and shoot
-        lemonGrab.spinFeederWheels(0.5);
+        double targetOffsetAngleHorizontal = tx.getDouble(0.0);
+        double adjustmentAngle = Kp * targetOffsetAngleHorizontal;
+        lemonDrive.drive(forwardPower, adjustmentAngle);
+      } else {
+        lemonGrab.shoot();
       }
     } else {
       //If we aren't pressing any buttons turn the motors off
-      lemonGrab.spinFeederWheels(0);
-      lemonGrab.spinFlyWheels(0);
+      lemonGrab.turnOff();
     }
 
     if(leftBumperPressed && lemonGrab.hasNote()){
@@ -271,7 +274,7 @@ public class Robot extends TimedRobot {
 
     if (leftBumperReleased) {
       //No longer intaking; raise intake to avoid damage
-      armPosition = lemonGrab.kArmPosSpeaker;
+      //armPosition = lemonGrab.kArmPosSpeaker;
     }
 
     if (rightBumper2){
@@ -301,26 +304,39 @@ public class Robot extends TimedRobot {
     boolean b2ButtonPressed = supportController.getBButtonPressed();
     boolean backButton2Pressed = supportController.getBackButtonPressed();
 
-
-   if(aButtonPressed || a2ButtonPressed){
+   if(aButtonPressed){
       //set arm to starting position
       armPosition = lemonGrab.kArmPosFloor;
-    } else if (bButtonPressed || b2ButtonPressed){
+    } else if (bButtonPressed){
       //set arm to shooting position 
       armPosition = lemonGrab.kArmPosSpeaker; 
-    }else if (yButtonPressed || y2ButtonPressed){
+    }else if (yButtonPressed){
       //set arm to idk what position it is 
       armPosition= lemonGrab.kArmPosStart;
-    }else if (xButtonPressed || x2ButtonPressed){
+    }else if (xButtonPressed){
       //set arm to amp position
       armPosition= lemonGrab.kArmPosAmp;
+    }
+
+    if(a2ButtonPressed) {
+      armPosition = lemonGrab.kArmPosFloor2;
+    }  else if ( b2ButtonPressed){
+      //set arm to shooting position 
+      armPosition = lemonGrab.kArmPosSpeaker2; 
+    }else if (y2ButtonPressed){
+      //set arm to idk what position it is 
+      armPosition= lemonGrab.kArmPosStart2;
+    }else if (x2ButtonPressed){
+      //set arm to amp position
+      armPosition= lemonGrab.kArmPosAmp2;
     }else if(backButton2Pressed){
       armPosition = lemonGrab.kArmPosExtra;
     }
 
     SmartDashboard.putNumber("Goal position", armPosition);
-    lemonGrab.moveArmToPos(armPosition);
 
+    lemonGrab.moveArmToPos(armPosition);
+    
   }
 
   /** This function is called once when the robot is disabled. */
