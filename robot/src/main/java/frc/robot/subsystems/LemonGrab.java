@@ -46,14 +46,14 @@ public class LemonGrab {
     public static double kArmPosExtra = 0.36;
 
     //CAN ports for motor controllers
-    private int shooterMotorCanPort = 5;
-    private int intakeMotorCanPort = 6;
+    private int flywheelMotorCanPort = 5;
+    private int feederMotorCanPort = 6;
     private int armMotorLeaderCanPort = 7; 
     private int armMotorFollowerCanPort = 8;
 
     //Motor controllers
-    private CANSparkMax shooterMotor = new CANSparkMax(shooterMotorCanPort, MotorType.kBrushless);
-    private CANSparkMax intakeMotor = new CANSparkMax(intakeMotorCanPort, MotorType.kBrushless);
+    private CANSparkMax flywheelMotor = new CANSparkMax(flywheelMotorCanPort, MotorType.kBrushless);
+    private CANSparkMax feederMotor = new CANSparkMax(feederMotorCanPort, MotorType.kBrushless);
     private CANSparkMax armMotorLeader = new CANSparkMax (armMotorLeaderCanPort, MotorType.kBrushless);
     private CANSparkMax armMotorFollower = new CANSparkMax (armMotorFollowerCanPort, MotorType.kBrushless);
 
@@ -72,10 +72,10 @@ public class LemonGrab {
     //Contructor
     public LemonGrab() {
         //Set the top motor for the shooter to spin in reverse
-        //shooterMotor.setInverted(true);
-        intakeMotor.setInverted(true);
-        intakeMotor.setIdleMode(IdleMode.kCoast);
-        shooterMotor.setIdleMode(IdleMode.kBrake);
+        //flywheelMotor.setInverted(true);
+        feederMotor.setInverted(true);
+        feederMotor.setIdleMode(IdleMode.kCoast);
+        flywheelMotor.setIdleMode(IdleMode.kBrake);
 
 
         //Set the second arm motor to follow the first
@@ -91,19 +91,54 @@ public class LemonGrab {
         colorMatcher.addColorMatch(yellowTarget);
     }
 
-    //Start the shooter spinning
-    public void shoot(double shotSpeed) {
-        shooterMotor.set(shotSpeed);
+    /*
+     * Start the shooter wheels spinning
+     */
+    public void spinFlyWheels(double flySpeed) {
+        flywheelMotor.set(flySpeed);
     }
 
-    //Set the shooter to stop spinning
-    public void stopShooting() {
-        shooterMotor.set(0);
+    /*
+     * Function to call our intake wheels
+     */
+    public void spinFeederWheels(double feederSpeed) {
+        feederMotor.set(feederSpeed);
     }
 
-    //Function to call our intake
-    public void intake(double intakeSpeed) {
-        intakeMotor.set(intakeSpeed);
+    /*
+     * TODO
+     * 
+     * Function to intake a note
+     */
+    public void intake() {
+
+    }
+
+    /*
+     * TODO
+     * 
+     * Function to shoot on the amp
+     */
+    public void shootAmp() {
+        
+    }
+
+    /*
+     * TODO
+     * 
+     * Function to shoot a note
+     */
+    public void shoot() {
+        
+    }
+
+    /*
+     * TODO
+     * 
+     * Function to turn off all of the motors
+     */
+    public void turnOff() {
+        
     }
  
     /**

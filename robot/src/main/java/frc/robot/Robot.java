@@ -15,6 +15,7 @@ import edu.wpi.first.wpilibj.GenericHID;
 //Import subsytems
 import frc.robot.subsystems.*;
 import frc.robot.util.*;
+import frc.robot.autonomous.*;
 
 //Libraries for Limelight
 import edu.wpi.first.networktables.NetworkTable;
@@ -30,13 +31,19 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 public class Robot extends TimedRobot {
 
   //Auto config options
-  private static final String kBasicAuto = "Basic Auto";
-  private static final String kMultiNoteAuto = "Multi Note Auto";
-  private static final String kSendItAuto = "Send It Auto";
+  private static final String kDriveAuto = "Drive Auto";
+  private static final String kOneNoteDriveAuto = "One Note Drive Auto";
+  private static final String kTwoNoteAuto = "Two Note Auto";
+  private static final String kThreeNoteAuto = "Three Note Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
   private Util util;
   private double startTime = 0;
+
+  private DriveAuto driveAuto;
+  private OneNoteDriveAuto oneNoteDriveAuto;
+  private TwoNoteAuto twoNoteAuto;
+  private ThreeNoteAuto threeNoteAuto;
 
   //Xbox Controller
   private final XboxController driveController = new XboxController(0);
@@ -63,9 +70,10 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotInit() {
-    m_chooser.setDefaultOption("Basic Auto", kBasicAuto);
-    m_chooser.addOption("Multi Note Auto", kMultiNoteAuto);
-    m_chooser.addOption("Send It Auto", kSendItAuto);
+    m_chooser.setDefaultOption("Drive Auto", kDriveAuto);
+    m_chooser.addOption(kOneNoteDriveAuto, kOneNoteDriveAuto);
+    m_chooser.addOption(kTwoNoteAuto, kTwoNoteAuto);
+    m_chooser.addOption(kThreeNoteAuto, kThreeNoteAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
 
     //Setup drive subsytem
@@ -90,8 +98,41 @@ public class Robot extends TimedRobot {
    */
   @Override
   public void robotPeriodic() {
+    //Push values from the arm to the dashboard
     lemonGrab.pushArmValue();
     lemonGrab.pushColorSensorValue();
+
+    //Get limelight values
+    tx = limelight.getEntry("tx");
+    SmartDashboard.putNumber("tx", tx.getDouble(0.0));
+    ty = limelight.getEntry("ty");
+    SmartDashboard.putNumber("ty", ty.getDouble(0.0));
+  }
+
+  /*
+   * This function uses the limelight ty value to calculate the distance from the speaker
+   * 
+   * Returns a double distance in inches
+   */
+  public double getDistance() {
+    double targetOffsetAngle_Vertical = ty.getDouble(0.0);
+
+    // how many degrees back is your limelight rotated from perfectly vertical?
+    double limelightMountAngleDegrees = 25.0; 
+
+    // distance from the center of the Limelight lens to the floor
+    double limelightLensHeightInches = 20.0; 
+
+    // distance from the target to the floor
+    double goalHeightInches = 60.0; 
+
+    double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
+    double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
+
+    //calculate distance
+    double distanceFromLimelightToGoalInches = (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
+
+    return distanceFromLimelightToGoalInches;
   }
 
   /**
@@ -108,6 +149,11 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     startTime = util.timer.getFPGATimestamp();
     SmartDashboard.putNumber("Start time", startTime);
+
+    driveAuto = new DriveAuto(lemonDrive, util, startTime);
+    oneNoteDriveAuto = new OneNoteDriveAuto(lemonDrive, lemonGrab, util, startTime);
+    twoNoteAuto = new TwoNoteAuto(lemonDrive, lemonGrab, util, startTime);
+    threeNoteAuto = new ThreeNoteAuto(lemonDrive, lemonGrab, util, startTime);
   }
 
   /** This function is called periodically during autonomous. */
@@ -117,83 +163,23 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Auto time", util.timer.getFPGATimestamp());
     SmartDashboard.putString("Auto selected", m_autoSelected);
     switch (m_autoSelected) {
-      case kMultiNoteAuto:
-        // Put custom auto code here
-        if(util.wait(startTime, 3)){
-          //Lower arm and start spinning shoot wheels
-          lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
-          lemonGrab.shoot(0.5);
-        } else if (util.wait(startTime, 5)) {
-          //Shoot
-          lemonGrab.shoot(0.5);
-          lemonGrab.intake(.5);
-        } else if (util.wait(startTime,7.5)) {
-          //Drive, intake
-          lemonGrab.shoot(0); 
-          lemonGrab.moveArmToPos(lemonGrab.kArmPosFloor);
-          lemonDrive.gyroDrive(0.5,0);
-          if (!lemonGrab.hasNote()){
-            lemonGrab.intake(.44);
-            lemonGrab.shoot(-0.05);
-          } else {
-            lemonGrab.intake(0);
-            lemonGrab.shoot(0);
-          }
-        } else if (util.wait(startTime,11.5)) {
-          //Drive back and start spinning shoot wheels
-          lemonDrive.gyroDrive(-0.5, 0);
-          lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
-          if (!lemonGrab.hasNote()){
-            lemonGrab.intake(.44);
-            lemonGrab.shoot(-0.05);
-          } else {
-            lemonGrab.intake(0);
-            lemonGrab.shoot(0.5);
-          }
-        } else if (util.wait(startTime,14)) {
-          //Shoot and stop
-          lemonGrab.shoot(0.5);
-          lemonGrab.intake(0.5);
-          lemonDrive.gyroDrive(0,0);
-        } else {
-          //Stop everything
-          lemonGrab.intake(0);
-          lemonGrab.shoot(0);
-          lemonDrive.gyroDrive(0, 0);
-        } 
+      case kTwoNoteAuto:
+        // Two note auto code goes here
+        twoNoteAuto.run();
         break;
-      case kSendItAuto:
-        //Shoot, wait and then long drive
-        if(util.wait(startTime, 3)){
-          //Lower arm and start spinning shoot wheels
-          lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
-          lemonGrab.shoot(0.5);
-        } else if (util.wait(startTime, 5)) {
-          //Shoot
-          lemonGrab.shoot(0.5);
-          lemonGrab.intake(.5);
-        } else if (util.wait(startTime,8)) {
-          //Wait
-          lemonGrab.shoot(0); 
-          lemonGrab.intake(0);
-        } else if (util.wait(startTime,15)) {
-          //Drive back and start spinning shoot wheels
-          lemonDrive.gyroDrive(-0.3, 0);
-        } else {
-          //Stop everything
-          lemonGrab.intake(0);
-          lemonGrab.shoot(0);
-          lemonDrive.gyroDrive(0, 0);
-        }
+      case kOneNoteDriveAuto:
+        //One note drive auto code goes here
+        oneNoteDriveAuto.run();
         break;
-      case kBasicAuto:
+      case kThreeNoteAuto:
+        //Three note auto code here
+        // IMPORTANT: CODE DOESNT DO ANYTHING YET
+        threeNoteAuto.run();
+        break;
+      case kDriveAuto:
       default:
-        // Put default auto code here
-        if(util.wait(startTime, 3 )){
-          lemonDrive.gyroDrive(0.5, 0);
-        } else {
-          lemonDrive.gyroDrive(0, 0);
-        }
+        // Put basic auto code here
+        driveAuto.run();
         break;
     }
   }
@@ -205,15 +191,7 @@ public class Robot extends TimedRobot {
   /** This function is called periodically during operator control. */
   @Override
   public void teleopPeriodic() {
-    //Get limelight values
-    tx = limelight.getEntry("tx");
-    SmartDashboard.putNumber("tx", tx.getDouble(0.0));
-    ty = limelight.getEntry("ty");
-    SmartDashboard.putNumber("ty", ty.getDouble(0.0));
-    double targetOffsetAngle = tx.getDouble(0.0);
-    double adjustmentAngle = Kp * targetOffsetAngle;
-
-    //Drive code
+    //Drive code -------------------------------------------------------------------
     boolean backButtonPressed = driveController.getBackButtonPressed();
 
     if (backButtonPressed){
@@ -224,12 +202,12 @@ public class Robot extends TimedRobot {
     double turnPower = driveController.getRightX();
     lemonDrive.drive(forwardPower, turnPower);
 
-    //Climbing code
+    //Climbing code -------------------------------------------------------------------
     double climbPower = supportController.getLeftY();
     lemonClimb.moveArm(climbPower);
     SmartDashboard.putNumber("Climb power", climbPower);
 
-    //Shooting and intake code
+    //Shooting and intake code -------------------------------------------------------------------
     boolean leftBumperPressed = driveController.getLeftBumper();
     boolean leftBumperReleased = driveController.getLeftBumperReleased();
     double leftTrigger = driveController.getLeftTriggerAxis();
@@ -247,34 +225,37 @@ public class Robot extends TimedRobot {
        * Move the arm to the floor position and start intaking
        */
       armPosition = lemonGrab.kArmPosFloor;
-      lemonGrab.intake(0.27);
+      lemonGrab.spinFeederWheels(0.27);
       
-      lemonGrab.shoot(-0.2);  
+      lemonGrab.spinFlyWheels(-0.2);  
     } else if (leftTrigger > 0 && lemonGrab.hasNote()) {
       //If we are not intaking, and we press the left trigger raise arm to amp position
       armPosition = lemonGrab.kArmPosAmp;
       if (lemonGrab.getArmPosition() >= lemonGrab.kArmPosAmp) {
         //If we're pressing the left trigger and in position, then shoot
-        lemonGrab.shoot(0.5);
-        lemonGrab.intake(0.5);
+        lemonGrab.spinFlyWheels(0.5);
+        lemonGrab.spinFeederWheels(0.5);
       }
     } else if (rightTrigger > 0.1) {
       //If we are not intaking or scoring on the amp and press the right trigger then start shooting process
       if(rightTrigger > 0.5) {
         //If we press the trigger all the way spin the shoot wheels 
-        lemonGrab.shoot(1);
+        lemonGrab.spinFlyWheels(1);
       } else {
         //If we half press the trigger then auto aim
+        double targetOffsetAngle = tx.getDouble(0.0);
+        double adjustmentAngle = Kp * targetOffsetAngle;
         lemonDrive.drive(forwardPower, adjustmentAngle);
       }
-      // if(rightBumper) {
-      //   //When we are ready to shoot, while holding the right trigger, press the right bumper to feed and shoot
-      //   lemonGrab.intake(0.5);
-      // }
+
+      if(rightBumper) {
+        //When we are ready to shoot, while holding the right trigger, press the right bumper to feed and shoot
+        lemonGrab.spinFeederWheels(0.5);
+      }
     } else {
       //If we aren't pressing any buttons turn the motors off
-      lemonGrab.intake(0);
-      lemonGrab.shoot(0);
+      lemonGrab.spinFeederWheels(0);
+      lemonGrab.spinFlyWheels(0);
     }
 
     if(leftBumperPressed && lemonGrab.hasNote()){
@@ -295,25 +276,25 @@ public class Robot extends TimedRobot {
 
     if (rightBumper2){
       //If the support driver presses the right bumper spit out the note
-      lemonGrab.intake(-1);
+      lemonGrab.spinFeederWheels(-1);
     } else if(rightBumper2Released){
       //When the support driver lets go of the right bumper set the intake back to 0
-      lemonGrab.intake(0);
+      lemonGrab.spinFeederWheels(0);
     } else if(leftBumper2){
       //when support driver presses the left bumper push back the note 
-      lemonGrab.shoot(-0.2);
+      lemonGrab.spinFlyWheels(-0.2);
     } else if (leftBumper2Released){
       //when the support driver lets go of the left bumper set the intake to 0
-      lemonGrab.shoot(0);
+      lemonGrab.spinFlyWheels(0);
     }
 
-    //Arm controls for the Primary Driver Controller
+    //Arm controls for the Primary Driver Controller -------------------------------------------------------------------
     boolean aButtonPressed = driveController.getAButtonPressed();
     boolean yButtonPressed = driveController.getYButtonPressed();
     boolean xButtonPressed = driveController.getXButtonPressed();
     boolean bButtonPressed = driveController.getBButtonPressed();
 
-    //Arm controls for the Support driver controller
+    //Arm controls for the Support driver controller -------------------------------------------------------------------
     boolean a2ButtonPressed = supportController.getAButtonPressed();
     boolean y2ButtonPressed = supportController.getYButtonPressed();
     boolean x2ButtonPressed = supportController.getXButtonPressed();
