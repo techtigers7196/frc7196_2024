@@ -11,7 +11,13 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 
 //Library for PID for the arm
 import edu.wpi.first.math.controller.PIDController;
+
+//Libraries for Limelight
+import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+
+
 //Library for the color sensor for note detection
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
@@ -34,8 +40,8 @@ public class LemonGrab {
     private double feedPower = .7;
 
     //Intake variables
-    private double intakePower = 0.35;
-    private double intakePrevent = -0.1;
+    private double intakePower = 0.3;
+    private double intakePrevent = -0.2;
 
     //PID Variables for arm power
     private final double kP = 15;
@@ -54,13 +60,9 @@ public class LemonGrab {
     public static double kArmPosSpeaker = 0.287;
     public static double kArmPosStart = 0.492;
     public static double kArmPosAmp = 0.5;
-    // public static double kArmPosExtra = 0.36;
+    public static double kArmPosExtra = 0.36;
 
-    public static double kArmPosFloor2 = 0.32; 
-    public static double kArmPosSpeaker2 = 0.342;
-    public static double kArmPosStart2 = 0.355;
-    public static double kArmPosAmp2 = 0.362 ;
-    public static double kArmPosExtra = 0.359;
+    private double goalPosition = this.kArmPosSpeaker;
 
     //CAN ports for motor controllers
     private int flywheelMotorCanPort = 5;
@@ -86,6 +88,10 @@ public class LemonGrab {
     private final Color blueTarget = new Color(0.561, 0.232, 0.114);
     private final Color yellowTarget = new Color(0.361, 0.524, 0.113);
 
+    //Network tables
+    private NetworkTable limelight;
+    private NetworkTableEntry tv;
+
     //Contructor
     public LemonGrab() {
         //Set the top motor for the shooter to spin in reverse
@@ -108,6 +114,9 @@ public class LemonGrab {
         colorMatcher.addColorMatch(greenTarget);
         colorMatcher.addColorMatch(blueTarget);
         colorMatcher.addColorMatch(yellowTarget);
+
+        limelight = NetworkTableInstance.getDefault().getTable("limelight");
+        tv = limelight.getEntry("tv");
     }
 
     /*
@@ -145,7 +154,9 @@ public class LemonGrab {
     public void shoot() {
         this.spinFlyWheels(shotPower);
 
-        if(shootEncoder.getVelocity() >= shotSpeed) {
+        double armThreshold = Math.abs(goalPosition - this.getArmPosition());
+
+        if(shootEncoder.getVelocity() >= shotSpeed && armThreshold <= 0.01) {
             this.spinFeederWheels(feedPower);
         }
     }
@@ -183,6 +194,11 @@ public class LemonGrab {
     public double calculateArmPosition(double distance) {
         double armPosition = 0.209 + 0.00231*distance - 0.0000131*Math.pow(distance, 2) + 0.0000000259*Math.pow(distance, 3);
         return armPosition;
+        // if(tv.getInteger(0) == 0) {
+        //     return this.kArmPosSpeaker;
+        // } else {
+        //     return armPosition;
+        // }
     }
 
     /*
@@ -216,6 +232,8 @@ public class LemonGrab {
         SmartDashboard.putNumber("Velocity: ", shootEncoder.getVelocity());
 
         SmartDashboard.putNumber("Arm Position", this.getArmPosition());
+
+        SmartDashboard.putNumber("tv", tv.getInteger(0));
     }
 
     public ColorMatchResult getColorMatch() {
@@ -225,6 +243,7 @@ public class LemonGrab {
 
     //Translate the position to a value and move the arm to that position
     public void moveArmToPos(double armPosition) {
+        this.goalPosition = armPosition;
         double pidValue = pid.calculate(this.getArmPosition(), armPosition);
         double power = feedForward + pidValue;
         this.moveArm(power);

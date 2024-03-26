@@ -112,6 +112,8 @@ public class Robot extends TimedRobot {
 
     double calculatedArmPosition = lemonGrab.calculateArmPosition(distance);
     SmartDashboard.putNumber("Arm Position: ", calculatedArmPosition);
+
+    SmartDashboard.putNumber("Gyro Angle", lemonDrive.getGyroAngle());
   }
 
   /**
@@ -216,12 +218,14 @@ public class Robot extends TimedRobot {
     } else if (rightTrigger > 0) {
       //If we are not intaking or scoring on the amp and press the right trigger then start shooting process
       if(rightTrigger < 0.5) {
+        //Align
         armPosition = lemonGrab.calculateArmPosition(lemonGrab.getDistance(ty));
 
         double targetOffsetAngleHorizontal = tx.getDouble(0.0);
         double adjustmentAngle = Kp * targetOffsetAngleHorizontal;
         lemonDrive.drive(forwardPower, adjustmentAngle);
       } else {
+        //Shoot
         lemonGrab.shoot();
       }
     } else {
@@ -272,32 +276,19 @@ public class Robot extends TimedRobot {
     boolean b2ButtonPressed = supportController.getBButtonPressed();
     boolean backButton2Pressed = supportController.getBackButtonPressed();
 
-   if(aButtonPressed){
+   if(aButtonPressed || a2ButtonPressed){
       //set arm to starting position
       armPosition = lemonGrab.kArmPosFloor;
-    } else if (bButtonPressed){
+    } else if (bButtonPressed || b2ButtonPressed){
       //set arm to shooting position 
       armPosition = lemonGrab.kArmPosSpeaker; 
-    }else if (yButtonPressed){
+    }else if (yButtonPressed || y2ButtonPressed){
       //set arm to idk what position it is 
       armPosition= lemonGrab.kArmPosStart;
-    }else if (xButtonPressed){
+    }else if (xButtonPressed || x2ButtonPressed){
       //set arm to amp position
       armPosition= lemonGrab.kArmPosAmp;
-    }
-
-    if(a2ButtonPressed) {
-      armPosition = lemonGrab.kArmPosFloor2;
-    }  else if ( b2ButtonPressed){
-      //set arm to shooting position 
-      armPosition = lemonGrab.kArmPosSpeaker2; 
-    }else if (y2ButtonPressed){
-      //set arm to idk what position it is 
-      armPosition= lemonGrab.kArmPosStart2;
-    }else if (x2ButtonPressed){
-      //set arm to amp position
-      armPosition= lemonGrab.kArmPosAmp2;
-    }else if(backButton2Pressed){
+    } else if(backButton2Pressed){
       armPosition = lemonGrab.kArmPosExtra;
     }
 

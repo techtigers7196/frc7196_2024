@@ -41,6 +41,7 @@ public class TwoNoteAuto {
         } else if (util.wait(startTime, 4)) {
             //Shoot
             lemonGrab.shoot();
+            lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
         } else if (util.wait(startTime,6)) {
             //Drive, intake 
             lemonGrab.moveArmToPos(lemonGrab.kArmPosFloor);

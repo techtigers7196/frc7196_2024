@@ -1,12 +1,14 @@
 package frc.robot.subsystems;
 
+import javax.swing.text.StyleContext.SmallAttributeSet;
+
 //Libraries for motor controllers
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkLowLevel.MotorType;
 
 //Library for drivetrain
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
-
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 //Library for gyro
 import edu.wpi.first.wpilibj.AnalogGyro;
 
@@ -43,6 +45,8 @@ public class LemonDrive {
 
         //Setup drive
         differentialDrive = new DifferentialDrive(leftDriveMotorLeader, rightDriveMotorLeader);
+
+        gyro.calibrate();
     }
 
     //Drive
@@ -56,11 +60,20 @@ public class LemonDrive {
     //Adjust our drive based on readings from our gyro
     //We use this during auto
     public void gyroDrive(double maxSpeed, double desiredAngle) {
-        double Kp = 0.015;
+        double Kp = 0.007;
         double currentAngle = gyro.getAngle();
-        double error = (Math.PI + desiredAngle - currentAngle) % (2*Math.PI) - Math.PI;
+        double error = (180 + desiredAngle - currentAngle) % 360 - 180;
         double steering = Kp * error;
+        SmartDashboard.putNumber("Steering", steering);
         this.drive(maxSpeed, steering);
+    }
+
+    public double getGyroAngle() {
+        return gyro.getAngle();
+    }
+
+    public void resetGyro() {
+        gyro.reset();
     }
     
 }

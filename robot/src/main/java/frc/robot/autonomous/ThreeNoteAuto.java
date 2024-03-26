@@ -32,6 +32,8 @@ public class ThreeNoteAuto {
         this.lemonGrab = lemonGrab;
 
         this.limelight = NetworkTableInstance.getDefault().getTable("limelight");
+
+        this.lemonDrive.resetGyro();
     }
 
     public void run(){
@@ -43,12 +45,21 @@ public class ThreeNoteAuto {
             //Lower arm and start spinning shoot wheels
             lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
         } else if (util.wait(startTime, 4)) {
-            //Shoot
+            //Shoot and drive slowly into the speaker
             lemonGrab.shoot();
-        } else if (util.wait(startTime,5.5)) {
+            lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
+            lemonDrive.gyroDrive(-0.1,0);
+        } else if (util.wait(startTime,6)) {
             //Drive, intake 
             lemonGrab.moveArmToPos(lemonGrab.kArmPosFloor);
-            lemonDrive.gyroDrive(0.5,0);
+
+            //If the robot is less than 123 inches drive, then stop
+            if(lemonGrab.getDistance(ty) <= 130) {
+                lemonDrive.gyroDrive(0.5,0);
+            } else {
+                lemonDrive.gyroDrive(0, 0);
+            }
+            
             if (!lemonGrab.hasNote()){
                 lemonGrab.intake();
             } else {
@@ -62,31 +73,41 @@ public class ThreeNoteAuto {
             double targetOffsetAngleHorizontal = tx.getDouble(0.0);
             double adjustmentAngle = Kp * targetOffsetAngleHorizontal;
             lemonDrive.drive(0, adjustmentAngle);
+
+            lemonGrab.shoot();
         } else if (util.wait(startTime,11)) {
             //Turn and intake
             lemonGrab.moveArmToPos(lemonGrab.kArmPosFloor);
-            lemonDrive.gyroDrive(.375,-90);
+            if(lemonDrive.getGyroAngle() < 90) {
+                lemonDrive.gyroDrive(0, 90);
+            } else {
+                lemonDrive.gyroDrive(.375, 90);
+            }
+            
             if(!lemonGrab.hasNote()) {
                 lemonGrab.intake();
             } else {
                 lemonGrab.turnOff();
             }
-        } else if (util.wait(startTime,12)) {
-            //Rough turn to angle
-            lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
-            lemonDrive.gyroDrive(0,-46);
-        } else if (util.wait(startTime,15)) {
-            //Shoot
-            double armPosition = lemonGrab.calculateArmPosition(lemonGrab.getDistance(ty));
-            lemonGrab.moveArmToPos(armPosition);
-
-            double targetOffsetAngleHorizontal = tx.getDouble(0.0);
-            double adjustmentAngle = Kp * targetOffsetAngleHorizontal;
-            lemonDrive.drive(0, adjustmentAngle);
         } else {
             //Stop everything
             lemonGrab.turnOff();
+            lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
             lemonDrive.gyroDrive(0, 0);
         } 
+        // } else if (util.wait(startTime,12)) {
+        //     //Rough turn to angle
+        //     lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
+        //     lemonDrive.gyroDrive(0,-46);
+        // } else if (util.wait(startTime,15)) {
+        //     //Shoot
+        //     double armPosition = lemonGrab.calculateArmPosition(lemonGrab.getDistance(ty));
+        //     lemonGrab.moveArmToPos(armPosition);
+
+        //     double targetOffsetAngleHorizontal = tx.getDouble(0.0);
+        //     double adjustmentAngle = Kp * targetOffsetAngleHorizontal;
+        //     lemonDrive.drive(0, adjustmentAngle);
+        // } 
+        
     }
 }
