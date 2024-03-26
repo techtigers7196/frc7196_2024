@@ -99,8 +99,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotPeriodic() {
     //Push values from the arm to the dashboard
-    lemonGrab.pushArmValue();
-    lemonGrab.pushColorSensorValue();
+    lemonGrab.pushDashboardValues();
 
     //Get limelight values
     tx = limelight.getEntry("tx");
@@ -108,42 +107,11 @@ public class Robot extends TimedRobot {
     ty = limelight.getEntry("ty");
     SmartDashboard.putNumber("ty", ty.getDouble(0.0));
 
-    double distance = this.getDistance();
+    double distance = lemonGrab.getDistance(ty);
     SmartDashboard.putNumber("Distance", distance);
 
-    double calculatedArmPosition = this.calculateArmPosition(distance);
+    double calculatedArmPosition = lemonGrab.calculateArmPosition(distance);
     SmartDashboard.putNumber("Arm Position: ", calculatedArmPosition);
-  }
-
-  /*
-   * This function uses the limelight ty value to calculate the distance from the speaker
-   * 
-   * Returns a double distance in inches
-   */
-  public double getDistance() {
-    double targetOffsetAngle_Vertical = ty.getDouble(0.0);
-
-    // how many degrees back is your limelight rotated from perfectly vertical?
-    double limelightMountAngleDegrees = 28; 
-
-    // distance from the center of the Limelight lens to the floor
-    double limelightLensHeightInches = 10.5; 
-
-    // distance from the target to the floor
-    double goalHeightInches = 49.0; 
-
-    double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
-    double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
-
-    //calculate distance
-    double distanceFromLimelightToGoalInches = (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
-
-    return distanceFromLimelightToGoalInches;
-  }
-
-  public double calculateArmPosition(double distance) {
-    double armPosition = 0.209 + 0.00231*distance - 0.0000131*Math.pow(distance, 2) + 0.0000000259*Math.pow(distance, 3);
-    return armPosition;
   }
 
   /**
@@ -248,7 +216,7 @@ public class Robot extends TimedRobot {
     } else if (rightTrigger > 0) {
       //If we are not intaking or scoring on the amp and press the right trigger then start shooting process
       if(rightTrigger < 0.5) {
-        armPosition = this.calculateArmPosition(this.getDistance());
+        armPosition = lemonGrab.calculateArmPosition(lemonGrab.getDistance(ty));
 
         double targetOffsetAngleHorizontal = tx.getDouble(0.0);
         double adjustmentAngle = Kp * targetOffsetAngleHorizontal;

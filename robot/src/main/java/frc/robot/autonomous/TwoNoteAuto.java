@@ -6,12 +6,23 @@ import frc.robot.util.*;
 //Smart Dashboard library
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
+//Libraries for Limelight
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
+
 public class TwoNoteAuto {
     private Util util;
     private double startTime;
     private LemonDrive lemonDrive;
     private LemonGrab lemonGrab;
-    
+
+    //Network tables
+    private NetworkTable limelight;
+    private NetworkTableEntry tx;
+    private NetworkTableEntry ty;
+    private double Kp = 0.05;
+        
     //Constructor
     public TwoNoteAuto(LemonDrive lemonDrive, LemonGrab lemonGrab, Util util, double startTime){
         //Setup utils
@@ -19,6 +30,8 @@ public class TwoNoteAuto {
         this.lemonDrive = lemonDrive;
         this.startTime = startTime;
         this.lemonGrab = lemonGrab;
+
+        limelight = NetworkTableInstance.getDefault().getTable("limelight");
     }
 
     public void run(){

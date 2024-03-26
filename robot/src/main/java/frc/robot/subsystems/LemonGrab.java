@@ -11,7 +11,7 @@ import edu.wpi.first.wpilibj.DutyCycleEncoder;
 
 //Library for PID for the arm
 import edu.wpi.first.math.controller.PIDController;
-
+import edu.wpi.first.networktables.NetworkTableEntry;
 //Library for the color sensor for note detection
 import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.util.Color;
@@ -125,8 +125,6 @@ public class LemonGrab {
     }
 
     /*
-     * TODO
-     * 
      * Function to intake a note
      */
     public void intake() {
@@ -135,8 +133,6 @@ public class LemonGrab {
     }
 
     /*
-     * TODO
-     * 
      * Function to shoot on the amp
      */
     public void shootAmp() {
@@ -144,8 +140,6 @@ public class LemonGrab {
     }
 
     /*
-     * TODO
-     * 
      * Function to shoot a note
      */
     public void shoot() {
@@ -157,8 +151,41 @@ public class LemonGrab {
     }
 
     /*
-     * TODO
+     * This function uses the limelight ty value to calculate the distance from the speaker
      * 
+     * Returns a double distance in inches
+     */
+    public double getDistance(NetworkTableEntry ty) {
+        double targetOffsetAngle_Vertical = ty.getDouble(0.0);
+
+        // how many degrees back is your limelight rotated from perfectly vertical?
+        double limelightMountAngleDegrees = 28; 
+
+        // distance from the center of the Limelight lens to the floor
+        double limelightLensHeightInches = 10.5; 
+
+        // distance from the target to the floor
+        double goalHeightInches = 49.0; 
+
+        double angleToGoalDegrees = limelightMountAngleDegrees + targetOffsetAngle_Vertical;
+        double angleToGoalRadians = angleToGoalDegrees * (3.14159 / 180.0);
+
+        //calculate distance
+        double distanceFromLimelightToGoalInches = (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
+
+        return distanceFromLimelightToGoalInches;
+    }
+
+    /*
+    * This function takes a distance and returns an arm position to score on the speaker
+    * Works best within 12 feet of the speaker
+    */
+    public double calculateArmPosition(double distance) {
+        double armPosition = 0.209 + 0.00231*distance - 0.0000131*Math.pow(distance, 2) + 0.0000000259*Math.pow(distance, 3);
+        return armPosition;
+    }
+
+    /*
      * Function to turn off all of the motors
      */
     public void turnOff() {
@@ -179,28 +206,21 @@ public class LemonGrab {
     }
 
     /*
-     * Push our Color Sensor Value to the SmartDashboard
+     * Push values to the SmartDashboard
      * This function will need to be called in robotPeriodic
      */
-    public void pushColorSensorValue() {
+    public void pushDashboardValues() {
         SmartDashboard.putNumber("Proximity", colorSensor.getProximity());
         SmartDashboard.putBoolean("Has Note", this.hasNote());
 
         SmartDashboard.putNumber("Velocity: ", shootEncoder.getVelocity());
 
+        SmartDashboard.putNumber("Arm Position", this.getArmPosition());
     }
 
     public ColorMatchResult getColorMatch() {
         Color detectedColor = colorSensor.getColor();
         return colorMatcher.matchClosestColor(detectedColor);
-    }
-
-    /*
-     * Push our Arm Encoder Value to the SmartDashboard
-     * This function will need to be called in robotPeriodic
-     */
-    public void pushArmValue() {
-        SmartDashboard.putNumber("Arm Position", this.getArmPosition());
     }
 
     //Translate the position to a value and move the arm to that position
