@@ -61,6 +61,7 @@ public class TwoNoteAuto {
         } else if (util.wait(startTime,14)) {
             //Shoot and stop
             lemonGrab.shoot();
+            lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
             lemonDrive.gyroDrive(0,0);
         } else {
             //Stop everything
