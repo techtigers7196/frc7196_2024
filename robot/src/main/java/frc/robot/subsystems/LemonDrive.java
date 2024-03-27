@@ -9,6 +9,7 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 //Library for drivetrain
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 //Library for gyro
 import edu.wpi.first.wpilibj.AnalogGyro;
 
@@ -33,7 +34,7 @@ public class LemonDrive {
     private DifferentialDrive differentialDrive;
 
     //Gyro
-    private AnalogGyro gyro = new AnalogGyro(0);
+    private ADXRS450_Gyro gyro = new ADXRS450_Gyro();
 
     //Constructor
     public LemonDrive() {
@@ -59,13 +60,38 @@ public class LemonDrive {
 
     //Adjust our drive based on readings from our gyro
     //We use this during auto
-    public void gyroDrive(double maxSpeed, double desiredAngle) {
-        double Kp = 0.007;
+    public void gyroDrive(double maxSpeed, double desiredAngle, boolean useThreshold) {
+        double Kp = 0.011;
         double currentAngle = gyro.getAngle();
         double error = (180 + desiredAngle - currentAngle) % 360 - 180;
         double steering = Kp * error;
         SmartDashboard.putNumber("Steering", steering);
-        this.drive(maxSpeed, steering);
+
+        double kThresh = 3;
+
+        if (useThreshold)
+        {
+            if (error >= kThresh)
+            {
+                this.drive(maxSpeed, 0.5);
+            }
+            else if (error <= -kThresh)
+            {
+                this.drive(maxSpeed, -0.5);
+            }
+            else
+            {
+                this.drive(maxSpeed, 0);
+            }
+        }
+
+        else
+        {
+            this.drive(maxSpeed, steering);
+        }
+        
+        
+        
     }
 
     public double getGyroAngle() {

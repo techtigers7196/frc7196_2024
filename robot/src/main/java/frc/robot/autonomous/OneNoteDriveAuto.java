@@ -35,10 +35,10 @@ public class OneNoteDriveAuto {
             lemonGrab.turnOff();
           } else if (util.wait(startTime,15)) {
             //Drive back
-            lemonDrive.gyroDrive(-0.3, 0);
+            lemonDrive.gyroDrive(-0.3, 0, false);
           } else {
             //Stop everything
-            lemonDrive.gyroDrive(0, 0);
+            lemonDrive.gyroDrive(0, 0, false);
           }
     }
 }

@@ -45,7 +45,7 @@ public class TwoNoteAuto {
         } else if (util.wait(startTime,6)) {
             //Drive, intake 
             lemonGrab.moveArmToPos(lemonGrab.kArmPosFloor);
-            lemonDrive.gyroDrive(0.5,0);
+            lemonDrive.gyroDrive(0.5,0,false);
             if (!lemonGrab.hasNote()){
                 lemonGrab.intake();
             } else {
@@ -53,7 +53,7 @@ public class TwoNoteAuto {
             }
         } else if (util.wait(startTime,10)) {
             //Drive back and start spinning shoot wheels
-            lemonDrive.gyroDrive(-0.5, 0);
+            lemonDrive.gyroDrive(-0.5, 0,false);
             lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
             if (!lemonGrab.hasNote()){
                 lemonGrab.intake();
@@ -62,11 +62,11 @@ public class TwoNoteAuto {
             //Shoot and stop
             lemonGrab.shoot();
             lemonGrab.moveArmToPos(lemonGrab.kArmPosSpeaker);
-            lemonDrive.gyroDrive(0,0);
+            lemonDrive.gyroDrive(0,0, false);
         } else {
             //Stop everything
             lemonGrab.turnOff();
-            lemonDrive.gyroDrive(0, 0);
+            lemonDrive.gyroDrive(0, 0, false);
         } 
     }
 }

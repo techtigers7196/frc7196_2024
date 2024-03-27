@@ -22,9 +22,9 @@ public class DriveAuto {
     public void run(){
         //Drive forward for three seconds
         if(util.wait(startTime, 3 )){
-            lemonDrive.gyroDrive(0.5, 0);
+            lemonDrive.gyroDrive(0.5, 0, false);
         } else {
-            lemonDrive.gyroDrive(0, 0);
+            lemonDrive.gyroDrive(0, 0, false);
         }
     }
 }

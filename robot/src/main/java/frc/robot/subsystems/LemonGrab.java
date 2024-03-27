@@ -41,7 +41,7 @@ public class LemonGrab {
 
     //Intake variables
     private double intakePower = 0.3;
-    private double intakePrevent = -0.2;
+    private double intakePrevent = -0.3;
 
     //PID Variables for arm power
     private final double kP = 15;
@@ -91,6 +91,9 @@ public class LemonGrab {
     //Network tables
     private NetworkTable limelight;
     private NetworkTableEntry tv;
+
+    //Last distance
+    private double last_distance = 0.0;
 
     //Contructor
     public LemonGrab() {
@@ -169,6 +172,11 @@ public class LemonGrab {
     public double getDistance(NetworkTableEntry ty) {
         double targetOffsetAngle_Vertical = ty.getDouble(0.0);
 
+        if (targetOffsetAngle_Vertical == 0)
+        {
+            return last_distance;
+        }
+
         // how many degrees back is your limelight rotated from perfectly vertical?
         double limelightMountAngleDegrees = 28; 
 
@@ -184,6 +192,8 @@ public class LemonGrab {
         //calculate distance
         double distanceFromLimelightToGoalInches = (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
 
+        last_distance = distanceFromLimelightToGoalInches;
+
         return distanceFromLimelightToGoalInches;
     }
 
@@ -192,13 +202,14 @@ public class LemonGrab {
     * Works best within 12 feet of the speaker
     */
     public double calculateArmPosition(double distance) {
+
         double armPosition = 0.209 + 0.00231*distance - 0.0000131*Math.pow(distance, 2) + 0.0000000259*Math.pow(distance, 3);
         return armPosition;
-        // if(tv.getInteger(0) == 0) {
-        //     return this.kArmPosSpeaker;
-        // } else {
-        //     return armPosition;
-        // }
+        /*if(tv.getInteger(0) == 0) {
+             return LemonGrab.kArmPosSpeaker;
+        } else {
+             return armPosition;
+        }*/
     }
 
     /*
